@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Command Center</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 🌍 Load Leaflet Map Library -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    #map { height: 350px; width: 100%; border-radius: 0.5rem; z-index: 0; }
+  </style>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen">
   <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center shadow-md">
@@ -18,7 +24,15 @@
     </div>
   </nav>
   
-  <div class="max-w-7xl mx-auto mt-8 p-6">
+  <div class="max-w-7xl mx-auto mt-8 p-6 space-y-6">
+    
+    <!-- 🗺️ THE MAP CARD -->
+    <div class="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6">
+      <h2 class="text-lg font-semibold text-gray-200 mb-4">🌍 Global Login Locations</h2>
+      <div id="map" class="border border-gray-600"></div>
+    </div>
+
+    <!-- 📊 THE TABLE CARD -->
     <div class="bg-gray-800 border border-gray-700 rounded-xl shadow-lg overflow-hidden">
       <div class="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
         <h2 class="text-lg font-semibold text-gray-200">Recent Authentication Attempts</h2>
@@ -46,9 +60,22 @@
   </div>
 
   <script>
+    let map;
+    let markersLayer;
+
+    // Initialize Auth
     fetch('/api/me').then(r => r.json()).then(u => {
       if (!u || u.role !== 'admin') return location.href = '/login';
       document.getElementById('who').textContent = u.username;
+      
+      // Initialize Map
+      map = L.map('map').setView([20, 0], 2); // Center of world
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO'
+      }).addTo(map);
+      
+      markersLayer = L.layerGroup().addTo(map);
+      
       load();
     });
 
@@ -59,11 +86,15 @@
       const r = await fetch('/api/admin/attempts');
       const data = await r.json();
       
+      // Clear old map markers
+      markersLayer.clearLayers();
+
       if (data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">No login attempts recorded yet.</td></tr>';
         return;
       }
 
+      // Process table rows
       tbody.innerHTML = data.map(a => {
         const date = new Date(a.attempted_at).toLocaleString();
         const isSuccess = a.success;
@@ -84,6 +115,33 @@
           </tr>
         `;
       }).join('');
+
+      // 🌍 Plot markers on map (Ignore Localhost)
+      data.forEach(a => {
+        if (a.city !== 'Local' && a.country !== 'Local' && a.city !== 'Unknown') {
+          // We use a quick free geocoding fetch to get lat/lon from the city name
+          fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(a.city + ', ' + a.country)}`)
+            .then(res => res.json())
+            .then(geo => {
+              if (geo && geo.length > 0) {
+                const lat = geo[0].lat;
+                const lon = geo[0].lon;
+                const color = a.success ? 'green' : 'red';
+                
+                // Create custom colored dot
+                const customIcon = L.divIcon({
+                  className: 'custom-icon',
+                  html: `<div style="background-color: ${color}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>`,
+                  iconSize: [12, 12]
+                });
+
+                L.marker([lat, lon], { icon: customIcon })
+                  .bindPopup(`<b>${a.username}</b><br>${a.city}, ${a.country}<br>${a.isp}<br>${a.success ? '✅ Success' : '❌ Failed'}`)
+                  .addTo(markersLayer);
+              }
+            });
+        }
+      });
     }
 
     function logout() {
