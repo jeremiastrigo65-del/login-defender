@@ -3,146 +3,309 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Command Center</title>
+  <title>Sign-in activity | Bee Farm Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- 🌍 Load Leaflet Map Library -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    #map { height: 350px; width: 100%; border-radius: 0.5rem; z-index: 0; }
+    :root {
+      --forest: #1d2a1b;
+      --bark: #2b1f14;
+      --bark-soft: #3a2b1c;
+      --line: #5a4429;
+      --honey: #f2a900;
+      --wax: #fbe9b0;
+      --meadow: #8fb36a;
+      --alert: #e0634f;
+    }
+    body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bark); color: var(--wax); }
+    .display { font-family: 'Fraunces', Georgia, serif; }
+    .muted { color: rgba(251, 233, 176, .65); }
+    .card { background: var(--bark-soft); border: 1px solid var(--line); border-radius: .9rem; }
+    .hex { clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+    .comb {
+      background-color: var(--forest);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%23f2a900' stroke-opacity='.2' stroke-width='1.5'/%3E%3Cpath d='M28 0L28 34L0 50L0 84L28 100L56 84L56 50L28 34' fill='none' stroke='%23f2a900' stroke-opacity='.2' stroke-width='1.5'/%3E%3C/svg%3E");
+    }
+    #map { height: clamp(260px, 42vh, 420px); width: 100%; border-radius: .6rem; background: var(--forest); z-index: 0; }
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--bark); color: var(--wax); }
+    .leaflet-container a.leaflet-popup-close-button { color: var(--wax); }
+
+    .chip { border: 1px solid var(--line); border-radius: 999px; padding: .3rem .9rem; font-size: .85rem; transition: background .15s; }
+    .chip:hover { background: var(--bark); }
+    .chip[aria-pressed="true"] { background: var(--honey); border-color: var(--honey); color: var(--bark); font-weight: 700; }
+    .btn { background: var(--honey); color: var(--bark); font-weight: 700; border-radius: .5rem; padding: .4rem .9rem; font-size: .875rem; }
+    .btn:hover { background: #ffc233; }
+    .btn-ghost { border: 1px solid var(--line); border-radius: .5rem; padding: .4rem .9rem; font-size: .875rem; }
+    .btn-ghost:hover { background: var(--bark); }
+    .field { background: var(--bark); border: 1px solid var(--line); color: var(--wax); border-radius: .5rem; padding: .45rem .8rem; font-size: .875rem; }
+    .field::placeholder { color: #a99567; }
+    :is(.field, .btn, .btn-ghost, .chip, a):focus-visible { outline: 2px solid var(--honey); outline-offset: 2px; }
+
+    .badge { display: inline-block; padding: .15rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 700; }
+    .badge-ok { background: rgba(143, 179, 106, .18); color: var(--meadow); border: 1px solid rgba(143, 179, 106, .5); }
+    .badge-bad { background: rgba(224, 99, 79, .18); color: #ff9a88; border: 1px solid rgba(224, 99, 79, .55); }
+    tbody tr.bad { background: rgba(224, 99, 79, .07); }
+    tbody tr:hover { background: rgba(242, 169, 0, .07); }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { display: inline-block; animation: spin .8s linear infinite; }
+    @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
   </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen">
-  <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center shadow-md">
-    <div class="flex items-center space-x-3">
-      <h1 class="text-xl font-bold text-red-500">⚠️ System Logs</h1>
-      <span class="bg-red-900/50 text-red-400 text-xs px-2 py-1 rounded border border-red-800 font-mono">ADMIN ONLY</span>
+<body class="min-h-screen">
+
+  <nav class="comb border-b border-[var(--line)] px-4 sm:px-6 py-3 flex flex-wrap gap-3 justify-between items-center">
+    <div class="flex items-center gap-3">
+      <div class="hex bg-[var(--honey)] w-10 h-10 flex items-center justify-center text-xl" aria-hidden="true">🐝</div>
+      <div>
+        <h1 class="display text-lg font-semibold leading-tight">Bee Farm sign-in activity</h1>
+        <p class="text-xs muted">Hotel &amp; restaurant admin</p>
+      </div>
+      <span class="badge badge-bad ml-1">Admins only</span>
     </div>
-    <div class="flex items-center space-x-4">
-      <span class="text-sm text-gray-400">Logged in as: <strong id="who" class="text-white"></strong></span>
-      <button onclick="logout()" class="text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded transition">Sign Out</button>
+    <div class="flex items-center gap-3 text-sm">
+      <span class="muted">Signed in as <strong id="who" class="text-[var(--wax)]"></strong></span>
+      <button onclick="logout()" class="btn-ghost">Sign out</button>
     </div>
   </nav>
-  
-  <div class="max-w-7xl mx-auto mt-8 p-6 space-y-6">
-    
-    <!-- 🗺️ THE MAP CARD -->
-    <div class="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6">
-      <h2 class="text-lg font-semibold text-gray-200 mb-4">🌍 Global Login Locations</h2>
-      <div id="map" class="border border-gray-600"></div>
-    </div>
 
-    <!-- 📊 THE TABLE CARD -->
-    <div class="bg-gray-800 border border-gray-700 rounded-xl shadow-lg overflow-hidden">
-      <div class="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
-        <h2 class="text-lg font-semibold text-gray-200">Recent Authentication Attempts</h2>
-        <button onclick="load()" class="text-sm bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded transition">🔄 Refresh</button>
+  <div class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+
+    <!-- Summary -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-4" aria-label="Summary">
+      <div class="card p-4 flex items-center gap-3"><div class="hex bg-[var(--honey)]/20 w-11 h-11 flex items-center justify-center" aria-hidden="true">🔑</div><div><p class="text-sm muted">Total attempts</p><p id="s-total" class="display text-3xl font-semibold">0</p></div></div>
+      <div class="card p-4 flex items-center gap-3"><div class="hex bg-[var(--meadow)]/20 w-11 h-11 flex items-center justify-center" aria-hidden="true">✅</div><div><p class="text-sm muted">Signed in</p><p id="s-ok" class="display text-3xl font-semibold">0</p></div></div>
+      <div class="card p-4 flex items-center gap-3"><div class="hex bg-[var(--alert)]/20 w-11 h-11 flex items-center justify-center" aria-hidden="true">🚫</div><div><p class="text-sm muted">Failed</p><p id="s-bad" class="display text-3xl font-semibold">0</p></div></div>
+      <div class="card p-4 flex items-center gap-3"><div class="hex bg-[var(--honey)]/20 w-11 h-11 flex items-center justify-center" aria-hidden="true">🌐</div><div><p class="text-sm muted">Unique IPs</p><p id="s-ip" class="display text-3xl font-semibold">0</p><p id="s-geo" class="text-xs muted"></p></div></div>
+    </section>
+
+    <!-- Map -->
+    <section class="card p-4 sm:p-6">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <h2 class="display text-xl font-semibold">Where people sign in from</h2>
+        <div class="flex items-center gap-4 text-xs muted" aria-label="Map legend">
+          <span class="flex items-center gap-1.5"><i class="w-3 h-3 rounded-full inline-block" style="background:var(--meadow)"></i>Signed in</span>
+          <span class="flex items-center gap-1.5"><i class="w-3 h-3 rounded-full inline-block" style="background:var(--alert)"></i>Failed</span>
+          <span class="flex items-center gap-1.5"><i class="w-3 h-3 rounded-full inline-block" style="background:var(--honey)"></i>Both</span>
+        </div>
       </div>
+      <div id="map" class="border border-[var(--line)]"></div>
+      <p id="mapNote" class="text-xs muted mt-2 min-h-[1rem]"></p>
+    </section>
+
+    <!-- Table -->
+    <section class="card overflow-hidden">
+      <div class="px-4 sm:px-6 py-4 border-b border-[var(--line)] space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 class="display text-xl font-semibold">Recent sign-in attempts</h2>
+          <div class="flex flex-wrap items-center gap-3">
+            <label class="flex items-center gap-2 text-sm muted cursor-pointer">
+              <input id="auto" type="checkbox" class="accent-[var(--honey)]"> Refresh every 30 seconds
+            </label>
+            <button id="refresh" onclick="load()" class="btn"><span id="refreshIcon">🔄</span> Refresh</button>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex gap-2" role="group" aria-label="Filter by status">
+            <button class="chip" data-filter="all" aria-pressed="true">All</button>
+            <button class="chip" data-filter="success" aria-pressed="false">Signed in</button>
+            <button class="chip" data-filter="failed" aria-pressed="false">Failed</button>
+          </div>
+          <input id="q" type="search" placeholder="Search username, IP, network or place" aria-label="Search attempts" class="field flex-1 min-w-[200px] max-w-md">
+          <span id="count" class="text-sm muted"></span>
+        </div>
+      </div>
+
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm text-gray-400">
-          <thead class="bg-gray-900 text-gray-500 uppercase text-xs font-mono tracking-wider">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-[var(--forest)] muted text-xs font-medium">
             <tr>
-              <th class="px-6 py-3">Timestamp</th>
-              <th class="px-6 py-3">Username</th>
-              <th class="px-6 py-3">IP Address</th>
-              <th class="px-6 py-3">ISP / Network</th>
-              <th class="px-6 py-3">Location</th>
-              <th class="px-6 py-3">Status</th>
-              <th class="px-6 py-3">Reason</th>
+              <th class="px-4 sm:px-6 py-3 font-medium">Time</th>
+              <th class="px-4 sm:px-6 py-3 font-medium">Username</th>
+              <th class="px-4 sm:px-6 py-3 font-medium">IP address</th>
+              <th class="px-4 sm:px-6 py-3 font-medium">Network</th>
+              <th class="px-4 sm:px-6 py-3 font-medium">Location</th>
+              <th class="px-4 sm:px-6 py-3 font-medium">Status</th>
+              <th class="px-4 sm:px-6 py-3 font-medium">Reason</th>
             </tr>
           </thead>
-          <tbody id="rows" class="divide-y divide-gray-700">
-            <tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">Loading logs...</td></tr>
+          <tbody id="rows" class="divide-y divide-[var(--line)]">
+            <tr><td colspan="7" class="px-6 py-8 text-center muted">Loading sign-in attempts...</td></tr>
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   </div>
 
   <script>
-    let map;
-    let markersLayer;
+    let map, markersLayer, timer = null, plotRun = 0;
+    let allData = [], filter = 'all', query = '';
+    const geoCache = new Map();
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-    // Initialize Auth
+    // Auth, then map
     fetch('/api/me').then(r => r.json()).then(u => {
       if (!u || u.role !== 'admin') return location.href = '/login';
-      document.getElementById('who').textContent = u.username;
-      
-      // Initialize Map
-      map = L.map('map').setView([20, 0], 2); // Center of world
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      $('who').textContent = u.username;
+
+      map = L.map('map', { worldCopyJump: true }).setView([20, 0], 2);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=cb1_54jb_1_0f50dd37fa8fe37764290420', {
         attribution: '&copy; OpenStreetMap &copy; CARTO'
       }).addTo(map);
-      
       markersLayer = L.layerGroup().addTo(map);
-      
+
       load();
-    });
+    }).catch(() => location.href = '/login');
 
     async function load() {
-      const tbody = document.getElementById('rows');
-      tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">Fetching data...</td></tr>';
-      
-      const r = await fetch('/api/admin/attempts');
-      const data = await r.json();
-      
-      // Clear old map markers
-      markersLayer.clearLayers();
+      const icon = $('refreshIcon');
+      icon.classList.add('spin');
+      try {
+        const r = await fetch('/api/admin/attempts');
+        if (r.status === 401 || r.status === 403) return location.href = '/login';
+        if (!r.ok) throw new Error('Server returned ' + r.status);
+        allData = await r.json();
+        updateStats();
+        render();
+      } catch (err) {
+        $('rows').innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center" style="color:#ff9a88">Could not load sign-in attempts. ${esc(err.message)}</td></tr>`;
+      } finally {
+        icon.classList.remove('spin');
+      }
+    }
 
-      if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">No login attempts recorded yet.</td></tr>';
+    function countUp(el, to) {
+      const from = parseInt(el.textContent, 10) || 0;
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches || from === to) { el.textContent = to; return; }
+      const start = performance.now(), dur = 600;
+      (function step(t) {
+        const p = Math.min((t - start) / dur, 1);
+        el.textContent = Math.round(from + (to - from) * p);
+        if (p < 1) requestAnimationFrame(step);
+      })(start);
+    }
+
+    function updateStats() {
+      const ok = allData.filter(a => a.success).length;
+      const countries = new Set(allData.map(a => a.country).filter(c => c && c !== 'Local' && c !== 'Unknown'));
+      countUp($('s-total'), allData.length);
+      countUp($('s-ok'), ok);
+      countUp($('s-bad'), allData.length - ok);
+      countUp($('s-ip'), new Set(allData.map(a => a.ip_address)).size);
+      $('s-geo').textContent = countries.size ? `from ${countries.size} ${countries.size === 1 ? 'country' : 'countries'}` : '';
+    }
+
+    function render() {
+      const rows = allData.filter(a => {
+        if (filter === 'success' && !a.success) return false;
+        if (filter === 'failed' && a.success) return false;
+        if (!query) return true;
+        return [a.username, a.ip_address, a.isp, a.city, a.country, a.reason].join(' ').toLowerCase().includes(query);
+      });
+      $('count').textContent = `Showing ${rows.length} of ${allData.length}`;
+
+      const tbody = $('rows');
+      if (!rows.length) {
+        const msg = allData.length ? 'No attempts match your filters.' : 'No sign-in attempts recorded yet.';
+        tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center muted">${msg}</td></tr>`;
+        plotMarkers([]);
         return;
       }
 
-      // Process table rows
-      tbody.innerHTML = data.map(a => {
-        const date = new Date(a.attempted_at).toLocaleString();
-        const isSuccess = a.success;
-        const rowClass = isSuccess ? 'hover:bg-gray-700/50' : 'bg-red-900/10 hover:bg-red-900/20';
-        const statusBadge = isSuccess 
-          ? '<span class="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs border border-green-800">SUCCESS</span>'
-          : '<span class="bg-red-900/50 text-red-400 px-2 py-1 rounded text-xs border border-red-800">FAILED</span>';
-          
+      tbody.innerHTML = rows.map(a => {
+        const place = a.country !== 'Local' ? `${esc(a.city)}, ${esc(a.country)}` : 'Localhost';
+        const badge = a.success ? '<span class="badge badge-ok">Signed in</span>' : '<span class="badge badge-bad">Failed</span>';
         return `
-          <tr class="${rowClass} transition duration-150">
-            <td class="px-6 py-4 font-mono text-xs">${date}</td>
-            <td class="px-6 py-4 font-semibold text-gray-200">${a.username || '<i>Unknown</i>'}</td>
-            <td class="px-6 py-4 font-mono">${a.ip_address}</td>
-            <td class="px-6 py-4 text-blue-300">${a.isp}</td>
-            <td class="px-6 py-4">${a.country !== 'Local' ? `${a.city}, ${a.country}` : 'Localhost'}</td>
-            <td class="px-6 py-4">${statusBadge}</td>
-            <td class="px-6 py-4 text-xs text-gray-400">${a.reason || '-'}</td>
-          </tr>
-        `;
+          <tr class="${a.success ? '' : 'bad'} transition-colors">
+            <td class="px-4 sm:px-6 py-3 font-mono text-xs whitespace-nowrap muted">${esc(new Date(a.attempted_at).toLocaleString())}</td>
+            <td class="px-4 sm:px-6 py-3 font-semibold">${a.username ? esc(a.username) : '<i class="muted">Unknown</i>'}</td>
+            <td class="px-4 sm:px-6 py-3 font-mono">${esc(a.ip_address)}</td>
+            <td class="px-4 sm:px-6 py-3" style="color:var(--meadow)">${esc(a.isp)}</td>
+            <td class="px-4 sm:px-6 py-3 whitespace-nowrap">${place}</td>
+            <td class="px-4 sm:px-6 py-3">${badge}</td>
+            <td class="px-4 sm:px-6 py-3 text-xs muted">${esc(a.reason) || '-'}</td>
+          </tr>`;
       }).join('');
 
-      // 🌍 Plot markers on map (Ignore Localhost)
-      data.forEach(a => {
-        if (a.city !== 'Local' && a.country !== 'Local' && a.city !== 'Unknown') {
-          // We use a quick free geocoding fetch to get lat/lon from the city name
-          fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(a.city + ', ' + a.country)}`)
-            .then(res => res.json())
-            .then(geo => {
-              if (geo && geo.length > 0) {
-                const lat = geo[0].lat;
-                const lon = geo[0].lon;
-                const color = a.success ? 'green' : 'red';
-                
-                // Create custom colored dot
-                const customIcon = L.divIcon({
-                  className: 'custom-icon',
-                  html: `<div style="background-color: ${color}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>`,
-                  iconSize: [12, 12]
-                });
-
-                L.marker([lat, lon], { icon: customIcon })
-                  .bindPopup(`<b>${a.username}</b><br>${a.city}, ${a.country}<br>${a.isp}<br>${a.success ? '✅ Success' : '❌ Failed'}`)
-                  .addTo(markersLayer);
-              }
-            });
-        }
-      });
+      plotMarkers(rows);
     }
+
+    async function geocode(key) {
+      if (geoCache.has(key)) return geoCache.get(key);
+      let pos = null;
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(key)}`);
+        const geo = await res.json();
+        if (geo && geo.length) pos = [parseFloat(geo[0].lat), parseFloat(geo[0].lon)];
+      } catch (e) { /* leave null */ }
+      geoCache.set(key, pos);
+      await sleep(1100); // be polite to the free geocoder: one lookup per place, spaced out
+      return pos;
+    }
+
+    async function plotMarkers(rows) {
+      const run = ++plotRun;
+      markersLayer.clearLayers();
+      const note = $('mapNote');
+
+      // Group by place so each city is looked up and drawn once
+      const groups = new Map();
+      rows.forEach(a => {
+        if (!a.city || !a.country || a.city === 'Local' || a.country === 'Local' || a.city === 'Unknown') return;
+        const key = `${a.city}, ${a.country}`;
+        if (!groups.has(key)) groups.set(key, { key, ok: 0, bad: 0, users: new Set(), isps: new Set() });
+        const g = groups.get(key);
+        a.success ? g.ok++ : g.bad++;
+        if (a.username) g.users.add(a.username);
+        if (a.isp) g.isps.add(a.isp);
+      });
+
+      if (!groups.size) { note.textContent = 'No public locations to show. Localhost attempts are skipped.'; return; }
+      note.textContent = 'Placing locations on the map...';
+
+      const points = [];
+      for (const g of groups.values()) {
+        const pos = await geocode(g.key);
+        if (run !== plotRun) return; // a newer filter or refresh took over
+        if (!pos) continue;
+
+        const color = g.bad && g.ok ? 'var(--honey)' : g.bad ? 'var(--alert)' : 'var(--meadow)';
+        const icon = L.divIcon({
+          className: '',
+          html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px rgba(0,0,0,.6)"></div>`,
+          iconSize: [14, 14]
+        });
+        const users = [...g.users].slice(0, 5).map(esc).join(', ') || 'Unknown';
+        L.marker(pos, { icon })
+          .bindPopup(`<b>${esc(g.key)}</b><br>Signed in: ${g.ok} &middot; Failed: ${g.bad}<br>Users: ${users}<br>${[...g.isps].map(esc).join(', ')}`)
+          .addTo(markersLayer);
+        points.push(pos);
+      }
+      note.textContent = points.length ? `${points.length} ${points.length === 1 ? 'location' : 'locations'} on the map.` : 'Could not find map positions for these places.';
+      if (points.length) map.fitBounds(points, { padding: [40, 40], maxZoom: 5 });
+    }
+
+    // Filters, search, auto refresh
+    document.querySelectorAll('.chip').forEach(btn => btn.addEventListener('click', () => {
+      filter = btn.dataset.filter;
+      document.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', b === btn));
+      render();
+    }));
+    let debounce;
+    $('q').addEventListener('input', e => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => { query = e.target.value.trim().toLowerCase(); render(); }, 250);
+    });
+    $('auto').addEventListener('change', e => {
+      clearInterval(timer);
+      if (e.target.checked) timer = setInterval(load, 30000);
+    });
 
     function logout() {
       fetch('/api/logout', { method: 'POST', redirect: 'manual' })
