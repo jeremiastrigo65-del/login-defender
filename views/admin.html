@@ -155,9 +155,9 @@
       $('who').textContent = u.username;
 
       map = L.map('map', { worldCopyJump: true }).setView([20, 0], 2);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=cb1_54jb_1_0f50dd37fa8fe37764290420', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO'
-      }).addTo(map);
+     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=cb1_54jb_1_0f50dd37fa8fe37764290420', {
+  attribution: '&copy; OpenStreetMap &copy; CARTO'
+}).addTo(map);
       markersLayer = L.layerGroup().addTo(map);
 
       load();
