@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -51,6 +51,134 @@
       msg.innerText = await r.text();
       msg.classList.remove('hidden');
       btn.innerText = 'Sign In'; btn.disabled = false;
+    });
+  </script>
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in | Bee Farm Hotel &amp; Restaurant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --forest: #1d2a1b;
+      --bark: #2b1f14;
+      --bark-soft: #3a2b1c;
+      --honey: #f2a900;
+      --honey-deep: #c98700;
+      --wax: #fbe9b0;
+      --meadow: #8fb36a;
+    }
+    body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bark); color: var(--wax); }
+    .display { font-family: 'Fraunces', Georgia, serif; }
+
+    /* honeycomb pattern on the brand panel */
+    .comb {
+      background-color: var(--forest);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%23f2a900' stroke-opacity='.22' stroke-width='1.5'/%3E%3Cpath d='M28 0L28 34L0 50L0 84L28 100L56 84L56 50L28 34' fill='none' stroke='%23f2a900' stroke-opacity='.22' stroke-width='1.5'/%3E%3C/svg%3E");
+    }
+    .hex { clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+
+    /* one moment of motion: the bee drifts once on load */
+    @keyframes drift {
+      0%   { transform: translate(-30px, 20px) rotate(-12deg); opacity: 0; }
+      100% { transform: translate(0, 0) rotate(0); opacity: 1; }
+    }
+    .bee { animation: drift .9s ease-out both; }
+    @media (prefers-reduced-motion: reduce) { .bee { animation: none; } }
+
+    .field {
+      background: var(--bark-soft);
+      border: 1px solid #5a4429;
+      color: var(--wax);
+    }
+    .field::placeholder { color: #a99567; }
+    .field:focus { outline: 2px solid var(--honey); outline-offset: 1px; border-color: var(--honey); }
+    .btn { background: var(--honey); color: var(--bark); }
+    .btn:hover { background: #ffc233; }
+    .btn:focus-visible, a:focus-visible { outline: 2px solid var(--wax); outline-offset: 2px; }
+    .btn:disabled { opacity: .7; cursor: wait; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <main class="min-h-screen grid lg:grid-cols-2">
+
+    <!-- Brand panel -->
+    <section class="comb relative flex flex-col justify-between p-8 lg:p-14 min-h-[260px]">
+      <div class="flex items-center gap-3">
+        <div class="hex bg-[var(--honey)] w-12 h-12 flex items-center justify-center text-2xl bee" aria-hidden="true">🐝</div>
+        <span class="display text-xl font-semibold">Bee Farm</span>
+      </div>
+
+      <div class="my-10 lg:my-0">
+        <h1 class="display text-4xl lg:text-6xl font-extrabold leading-[1.05] max-w-md">
+          Rooms, tables and the kitchen in one hive.
+        </h1>
+        <p class="mt-5 text-[var(--meadow)] text-lg max-w-sm leading-relaxed">
+          Sign in to manage bookings, orders and today's honey-farm menu.
+        </p>
+      </div>
+
+      <p class="text-sm text-[var(--wax)]/70">Bee Farm Hotel &amp; Restaurant staff portal</p>
+    </section>
+
+    <!-- Sign-in panel -->
+    <section class="flex items-center justify-center p-6 lg:p-14">
+      <div class="w-full max-w-sm">
+        <h2 class="display text-3xl font-semibold">Staff sign in</h2>
+        <p class="text-[var(--wax)]/70 mt-2 mb-8">Use your Bee Farm username and password.</p>
+
+        <div id="msg" role="alert" class="hidden bg-red-950/60 border border-red-400 text-red-200 p-3 rounded-lg mb-4 text-sm"></div>
+
+        <form id="f" class="space-y-5">
+          <div>
+            <label for="username" class="block text-sm font-medium mb-1.5">Username</label>
+            <input id="username" name="username" required autocomplete="username" class="field w-full rounded-lg px-4 py-2.5">
+          </div>
+          <div>
+            <label for="password" class="block text-sm font-medium mb-1.5">Password</label>
+            <input id="password" name="password" type="password" required autocomplete="current-password" class="field w-full rounded-lg px-4 py-2.5">
+          </div>
+          <button class="btn w-full font-bold py-2.5 px-4 rounded-lg transition duration-200">Sign in</button>
+        </form>
+
+        <div class="mt-8 text-sm text-[var(--wax)]/70 space-y-2">
+          <p>Demo: <code class="text-[var(--honey)]">admin / admin123</code></p>
+          <p>New to the team? <a href="/register" class="text-[var(--honey)] underline underline-offset-2">Create a staff account</a></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    document.getElementById('f').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('button');
+      const msg = document.getElementById('msg');
+      btn.innerText = 'Signing in...'; btn.disabled = true;
+      msg.classList.add('hidden');
+
+      try {
+        const fd = new FormData(e.target);
+        const r = await fetch('/api/login', { method: 'POST', body: new URLSearchParams(fd) });
+
+        if (r.redirected) return location.href = r.url;
+
+        msg.innerText = await r.text();
+        msg.classList.remove('hidden');
+      } catch (err) {
+        msg.innerText = 'Could not reach the server. Check your connection and try again.';
+        msg.classList.remove('hidden');
+      }
+      btn.innerText = 'Sign in'; btn.disabled = false;
     });
   </script>
 </body>
