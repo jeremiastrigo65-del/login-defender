@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Command Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+  <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center shadow-md">
+    <div class="flex items-center space-x-3">
+      <h1 class="text-xl font-bold text-red-500">⚠️ System Logs</h1>
+      <span class="bg-red-900/50 text-red-400 text-xs px-2 py-1 rounded border border-red-800 font-mono">ADMIN ONLY</span>
+    </div>
+    <div class="flex items-center space-x-4">
+      <span class="text-sm text-gray-400">Logged in as: <strong id="who" class="text-white"></strong></span>
+      <button onclick="logout()" class="text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded transition">Sign Out</button>
+    </div>
+  </nav>
+  
+  <div class="max-w-7xl mx-auto mt-8 p-6">
+    <div class="bg-gray-800 border border-gray-700 rounded-xl shadow-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
+        <h2 class="text-lg font-semibold text-gray-200">Recent Authentication Attempts</h2>
+        <button onclick="load()" class="text-sm bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded transition">🔄 Refresh</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-gray-400">
+          <thead class="bg-gray-900 text-gray-500 uppercase text-xs font-mono tracking-wider">
+            <tr>
+              <th class="px-6 py-3">Timestamp</th>
+              <th class="px-6 py-3">Username</th>
+              <th class="px-6 py-3">IP Address</th>
+              <th class="px-6 py-3">ISP / Network</th>
+              <th class="px-6 py-3">Location</th>
+              <th class="px-6 py-3">Status</th>
+              <th class="px-6 py-3">Reason</th>
+            </tr>
+          </thead>
+          <tbody id="rows" class="divide-y divide-gray-700">
+            <tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">Loading logs...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    fetch('/api/me').then(r => r.json()).then(u => {
+      if (!u || u.role !== 'admin') return location.href = '/login';
+      document.getElementById('who').textContent = u.username;
+      load();
+    });
+
+    async function load() {
+      const tbody = document.getElementById('rows');
+      tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">Fetching data...</td></tr>';
+      
+      const r = await fetch('/api/admin/attempts');
+      const data = await r.json();
+      
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">No login attempts recorded yet.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.map(a => {
+        const date = new Date(a.attempted_at).toLocaleString();
+        const isSuccess = a.success;
+        const rowClass = isSuccess ? 'hover:bg-gray-700/50' : 'bg-red-900/10 hover:bg-red-900/20';
+        const statusBadge = isSuccess 
+          ? '<span class="bg-green-900/50 text-green-400 px-2 py-1 rounded text-xs border border-green-800">SUCCESS</span>'
+          : '<span class="bg-red-900/50 text-red-400 px-2 py-1 rounded text-xs border border-red-800">FAILED</span>';
+          
+        return `
+          <tr class="${rowClass} transition duration-150">
+            <td class="px-6 py-4 font-mono text-xs">${date}</td>
+            <td class="px-6 py-4 font-semibold text-gray-200">${a.username || '<i>Unknown</i>'}</td>
+            <td class="px-6 py-4 font-mono">${a.ip_address}</td>
+            <td class="px-6 py-4 text-blue-300">${a.isp}</td>
+            <td class="px-6 py-4">${a.country !== 'Local' ? `${a.city}, ${a.country}` : 'Localhost'}</td>
+            <td class="px-6 py-4">${statusBadge}</td>
+            <td class="px-6 py-4 text-xs text-gray-400">${a.reason || '-'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function logout() {
+      fetch('/api/logout', { method: 'POST', redirect: 'manual' })
+        .then(() => location.href = '/login');
+    }
+  </script>
+</body>
+</html>

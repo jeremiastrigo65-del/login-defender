@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Login | Defender System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans h-screen flex items-center justify-center">
+  <div class="bg-gray-800 p-8 rounded-xl shadow-2xl w-96 border border-gray-700">
+    <div class="text-center mb-8">
+      <h1 class="text-2xl font-bold text-blue-400">🛡️ SecureAccess</h1>
+      <p class="text-sm text-gray-400 mt-2">Enter credentials to authenticate</p>
+    </div>
+    
+    <div id="msg" class="hidden bg-red-900/50 border border-red-500 text-red-300 p-3 rounded-lg mb-4 text-sm text-center"></div>
+
+    <form id="f" class="space-y-4">
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Username</label>
+        <input name="username" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+      </div>
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">Password</label>
+        <input name="password" type="password" required class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+      </div>
+      <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+        Sign In
+      </button>
+    </form>
+    
+    <div class="mt-6 text-center text-sm text-gray-500">
+      <p>Demo: <code class="text-gray-400">admin / admin123</code></p>
+      <p class="mt-2"><a href="/register" class="text-blue-400 hover:underline">Create an account</a></p>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('f').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('button');
+      const msg = document.getElementById('msg');
+      btn.innerText = 'Authenticating...'; btn.disabled = true;
+      msg.classList.add('hidden');
+
+      const fd = new FormData(e.target);
+      const r = await fetch('/api/login', { method: 'POST', body: new URLSearchParams(fd) });
+      
+      if (r.redirected) return location.href = r.url;
+      
+      msg.innerText = await r.text();
+      msg.classList.remove('hidden');
+      btn.innerText = 'Sign In'; btn.disabled = false;
+    });
+  </script>
+</body>
+</html>
