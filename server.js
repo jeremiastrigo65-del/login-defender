@@ -23,7 +23,8 @@ app.use(session({
   saveUninitialized: false,
   cookie: { httpOnly: true, maxAge: 1000 * 60 * 60 },
 }));
-app.use(express.static(path.join(__dirname, 'views')));
+
+// ❌ REMOVED: app.use(express.static(path.join(__dirname, 'views'))); 
 
 // Config
 const MAX_ATTEMPTS = 5;
@@ -51,7 +52,7 @@ async function currentUser(req) {
 function requireAuth(role) {
   return async (req, res, next) => {
     const u = await currentUser(req);
-    if (!u) return res.redirect('/login'); // FIXED: Removed .html
+    if (!u) return res.redirect('/login');
     if (role && u.role !== role) return res.status(403).send('Forbidden');
     req.user = u;
     next();
@@ -73,7 +74,7 @@ app.post('/api/register', async (req, res) => {
       `INSERT INTO users (username, password_hash) VALUES ($1,$2)`,
       [username.trim(), hash]
     );
-    res.redirect('/login?registered=1'); // FIXED: Removed .html
+    res.redirect('/login?registered=1');
   } catch {
     res.status(400).send('Username already taken.');
   }
@@ -105,7 +106,7 @@ app.post('/api/login', async (req, res) => {
     await logAttempt(username, ip, true, 'Login success');
     req.session.userId = user.id;
     req.session.role = user.role;
-    return res.redirect(user.role === 'admin' ? '/admin' : '/dashboard'); // FIXED: Removed .html
+    return res.redirect(user.role === 'admin' ? '/admin' : '/dashboard');
   }
 
   // 3) Fail path
@@ -126,7 +127,7 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.post('/api/logout', (req, res) => {
-  req.session.destroy(() => res.redirect('/login')); // FIXED: Removed .html
+  req.session.destroy(() => res.redirect('/login'));
 });
 
 // Admin data (JSON, fetched by admin.html)
